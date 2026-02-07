@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from "react"
-import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
-import { parseEther } from "viem"
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi"
+import { parseEther, formatEther } from "viem"
 import { ABI, CONTRACT_ADDRESS } from "../constants"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 
@@ -12,6 +12,12 @@ export default function CoffeeForm() {
 
   // The hook to write to the blockchain
   const { data: hash, mutate, isPending } = useWriteContract()
+
+  const { data: memos, isLoading: isLoadingMemos, refetch: refetchMemos } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: ABI,
+    functionName: 'getMemos',
+  })
 
   const handleBuyCoffee = async () => {
 
@@ -44,6 +50,35 @@ export default function CoffeeForm() {
       </button>
 
       {isSuccess && <p className="text-green-500">Coffee bought! Transaction: {hash}</p>}
+
+      <div className="mt-8 border-t pt-8">
+        <h2 className="text-xl font-bold mb-4">Recent Memos</h2>
+
+        {
+          isLoadingMemos && <p>Loading memos...</p>
+        }
+
+        <div className="space-y-4">
+          {
+            memos?.map((memo: any, index: number) => (
+              <div key={index} className="p-4 border rounded shadow-sm bg-gray-50">
+                <p className="font-bold text-black">"{memo.message}"</p>
+                <p className="text-sm text-gray-600">From: {memo.name} ({memo.from.slice(0, 6)}...{memo.from.slice(-4)})</p>
+                <p className="text-xs text-gray-400">
+                  {new Date(Number(memo.timestamp) * 1000).toLocaleString()}
+                </p>
+              </div>
+            ))
+          }
+        </div>
+
+        <button
+          onClick={() => refetchMemos()}
+          className="mt-4 text-blue-500 underline text-sm"
+        >
+          Refresh Memos
+        </button>
+      </div>
     </div>
   )
 }
